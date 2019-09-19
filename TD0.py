@@ -36,51 +36,36 @@ def recom(x):
     else:
         return 0
 
-
-class AgentTD0(Agent):
-    '''
-        Agente que calcula Vpi con TD0
-    '''
-    def TD0(self,action,iteraciones):
-        self.update_dictionaries(0,'')
-        action_X = action
-        for x in range(iteraciones):
-            is_done, new_state = self.update_dictionaries(action_X, 'X')
-            if is_done:
-                #Quiere decir que acabo el juego
-                self.state = new_state
-                state = self.state_to_base10(self.state)
-                default = self.values.get(state)
-                Vs = 0 if default == None else default
-                Rt = recom(self.state)
-                self.values[state] = Vs + self.alfa*(Rt -Vs)
-                self.state = self.board.reset()
-            else:
-                #Quiere decir que no acaba el juego, tira O
-                self.state = new_state
-                Rt = recom(self.state)
-                state = self.state_to_base10(self.state)
-                default = self.values.get(state)
-                Vs = 0 if default == None else default
-                action_O = self.select_random_action('O')
-                is_done, new_state = self.update_dictionaries(action_O, 'O')
-                if is_done:
-                     #Quiere decir acaba el juego 
-                    Vs_prima = recom(new_state)*0.5
-                    self.values[state] = Vs + self.alfa*(Rt + self.gamma*Vs_prima - Vs)
-                    self.state = self.board.reset()
-                else:
-                    #Quiere decir que no acabo el juego, tira X
-                    action_X = self.select_random_action('X')
-
     def num_to_matrix(self,num):
         x = self.state_to_matrix(self.base10_to_state(num))
         return x
+    
+    def TD1(self,n):
+        self.values[self.key] = 0
+        reflected = False
+        rots = 0
+        for _ in range(n):
+            is_done, new_key, reflected, rots = self.update_dicts(reflected, rots, 'X')
+            self.key = self.reset_key() if is_done else new_key
+            state = self.base10_to_state(new_key)
+            default = self.values.get(new_key)
+            Vs = 0 if default == None else default
+            print(state)
+            if is_done:
+                Rt = recom(state)
+                self.values[new_key] = Vs + self.alfa*(Rt -Vs)
+                reflected, rots = self.reset_rr()
+            else:
+                is_done, new_key, reflected, rots = self.update_dicts(reflected, rots, 'O')
+                self.key = self.reset_key() if is_done else new_key
+                default = self.values.get(new_key)
+                Rt_mas_uno = recom(self.base10_to_state(new_key)) 
+                Vs_prima = 0 if default == None else default
+                self.values[new_key] = Vs + self.alfa*(Rt_mas_uno + self.gamma*Vs_prima - Vs)
+                if is_done:
+                    reflected, rots = self.reset_rr()
+        self.key = self.reset_key()
+    
 
 
 
-player = AgentTD0()
-player.TD0(8,1000)
-player.TD0(1,1000)
-print(player.values)
-print(len(player.values))
