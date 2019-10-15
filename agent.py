@@ -21,10 +21,10 @@ class Agent:
         self.rewards = collections.defaultdict(float)
         self.transits = collections.defaultdict(collections.Counter)
         self.values = collections.defaultdict(float)
-        self.gamma = 0.4
-        self.alfa = 0.3
+        self.gamma = 0.5
+        self.alfa = 0.2
     
-    def select_random_action(self, player, state):
+    def select_random_action(self, state):
         '''
             Realiza un movimiento aleatorio
         '''
@@ -33,21 +33,33 @@ class Agent:
             if state[action] == 0:
                 return action
     
+    def update(self, reflected, rots, player):
+        '''
+            Actualiza las diccionarios asociados a
+            las tablas de valores.
+        '''
+        state = self.base10_to_state(self.key)
+        action = self.select_random_action(state)
+        board_action = self.get_board_action(action, reflected, rots)
+        new_state, reward, is_done = self.board.step(board_action, player)
+        new_key = self.get_min_state(new_state)[0]
+        [_, reflected, rots] = self.get_min_state(new_state)[1]
+        return is_done, new_key, reflected, rots, reward
     def update_dicts(self, reflected, rots, player):
         '''
             Actualiza las diccionarios asociados a
             las tablas de valores.
         '''
         state = self.base10_to_state(self.key)
-        action = self.select_random_action('X', state)
+        action = self.select_random_action(state)
         board_action = self.get_board_action(action, reflected, rots)
         new_state, reward, is_done = self.board.step(board_action, player)
         new_key = self.get_min_state(new_state)[0]
         [_, reflected, rots] = self.get_min_state(new_state)[1]
-        #self.rewards[(self.key, action, new_key)] = reward
-        #self.values[new_key] = reward
-        #self.transits[(self.key, action)][new_key] += 1
-        return is_done, new_key, reflected, rots,reward
+        self.rewards[(self.key, action, new_key)] = reward
+        self.values[new_key] = 0
+        self.transits[(self.key, action)][new_key] += 1
+        return is_done, new_key, reflected, rots
 
     def reset_key(self):
         self.board.reset()
